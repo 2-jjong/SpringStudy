@@ -4,9 +4,11 @@ import com.example.springstudy.DTO.BookDTO;
 import com.example.springstudy.DTO.LoanDTO;
 import com.example.springstudy.Entity.BookEntity;
 import com.example.springstudy.Entity.LoanEntity;
+import com.example.springstudy.Entity.ReservationEntity;
 import com.example.springstudy.Entity.UserEntity;
 import com.example.springstudy.Repository.BookRepository;
 import com.example.springstudy.Repository.LoanRepository;
+import com.example.springstudy.Repository.ReservationRepository;
 import com.example.springstudy.Repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +28,16 @@ public class LoanServiceImpl implements LoanService {
   private final LoanRepository loanRepository;
   private final BookRepository bookRepository;
   private final UserRepository userRepository;
+  private final ReservationRepository reservationRepository;
+  private final ReservationService reservationService;
 
   @Autowired
-  public LoanServiceImpl(LoanRepository loanRepository, BookRepository bookRepository, UserRepository userRepository) {
+  public LoanServiceImpl(LoanRepository loanRepository, BookRepository bookRepository, UserRepository userRepository, ReservationRepository reservationRepository, ReservationService reservationService) {
     this.loanRepository = loanRepository;
     this.bookRepository = bookRepository;
     this.userRepository = userRepository;
+    this.reservationRepository = reservationRepository;
+    this.reservationService = reservationService;
   }
 
   @Override
@@ -70,6 +76,7 @@ public class LoanServiceImpl implements LoanService {
 
     return mapLoanEntityToDTO(loanEntity);
   }
+
   public class AlreadyLoanedException extends RuntimeException {
     public AlreadyLoanedException(String message) {
       super(message);
@@ -113,7 +120,7 @@ public class LoanServiceImpl implements LoanService {
         .returnDate(loanEntity.getReturnDate())
         .build();
 
-}
+  }
 
 
   @Override
@@ -160,7 +167,7 @@ public class LoanServiceImpl implements LoanService {
   }
 
 
-  public boolean returnBook(Long id) {
+  public String returnBook(Long id) {
     // 대출 ID로 대출 정보를 조회
     Optional<LoanEntity> loanOptional = loanRepository.findById(id);
     if (loanOptional.isPresent()) {
@@ -168,25 +175,31 @@ public class LoanServiceImpl implements LoanService {
       BookEntity bookEntity = loanEntity.getBook();
       UserEntity userEntity = loanEntity.getUser();
 
-      // 책 반납 전에 대출 가능 여부를 체크
-      if (isBookReturned(loanEntity.getBook())) {
-
-        loanRepository.delete(loanEntity);
-
-        // 책 반납 후에 대출 가능한 상태로 업데이트
-        bookEntity.setCurrentLoans(bookEntity.getCurrentLoans() - 1);
-        userEntity.setCurrentLoans(userEntity.getCurrentLoans() - 1);
-        bookRepository.save(bookEntity);
-        userRepository.save(userEntity);
-
-        return true;
-      } else {
-        // 대출 불가능한 경우 반납 실패 처리
-        return false;
+      // 책이 반납 가능한지 확인
+      if (bookEntity.isAvailableForReturn()) { // 수정된 부분
+        return "책이 이미 반납되었거나 반납할 수 없는 상태입니다.";
       }
+
+      // 대출 정보 삭제
+      loanRepository.delete(loanEntity);
+
+      // 책 및 사용자 정보 업데이트
+      bookEntity.setCurrentLoans(bookEntity.getCurrentLoans() - 1);
+      userEntity.setCurrentLoans(userEntity.getCurrentLoans() - 1);
+      bookRepository.save(bookEntity);
+      userRepository.save(userEntity);
+
+      // 다음 예약자에게 자동 대출 처리
+      ReservationEntity nextReservation = reservationService.getNextReservation(bookEntity.getId());
+      if (nextReservation != null) {
+        createLoan(new LoanDTO(nextReservation.getBook(), nextReservation.getUser()));
+        reservationService.deleteReservation(nextReservation);
+        return "반납이 완료되었으며, 다음 예약자에게 자동으로 대출되었습니다.";
+      }
+
+      return "반납이 완료되었습니다.";
     } else {
-      // 대출 정보가 없는 경우 반납 실패 처리
-      return false;
+      return "해당 대출 정보를 찾을 수 없습니다.";
     }
   }
 

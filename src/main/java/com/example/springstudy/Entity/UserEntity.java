@@ -39,6 +39,9 @@ public class UserEntity {
     this.password = password;
   }
 
+  public UserEntity(Long userId) {
+  }
+
 
   public void updateName(String username) {
 

@@ -27,6 +27,7 @@ public class BookEntity {
   private boolean isBorrowed;
   private int currentLoans = 0;  // 현재 대출 중인 사람 수 초기화
   private static final int MAX_LOANS = 3;
+  private boolean available = true; // 기본값을 true로 설정
 
 
   @Builder
@@ -35,6 +36,9 @@ public class BookEntity {
     this.author = author;
     this.isbn = isbn;
     this.publishedDate = publishedDate;
+  }
+
+  public BookEntity(Long bookId) {
   }
 
   public void updateTitle(String title) {
@@ -81,6 +85,19 @@ public class BookEntity {
   }
 
 
+  public boolean isAvailable() {
+
+    return available;
+  }
+
+  public void setAvailable(boolean available) {
+    this.available = available;
+  }
+
+  public boolean isAvailableForReturn() {
+    // 책이 현재 대출 중이라면 반납할 수 없음
+    return !this.available; // available이 대출 중을 나타내는 상태라고 가정
+  }
 
 }
 

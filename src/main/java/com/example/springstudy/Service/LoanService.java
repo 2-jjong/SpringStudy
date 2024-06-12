@@ -18,7 +18,7 @@ public interface LoanService {
 
   List<BookDTO> getBooksByUserId(Long userId);
 
-  boolean returnBook(Long id);
+  String returnBook(Long id);
 
 
 

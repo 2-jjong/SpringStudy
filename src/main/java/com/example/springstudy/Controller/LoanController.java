@@ -59,17 +59,19 @@ public class LoanController {
   @PutMapping("/{id}/return")
   public ResponseEntity<String> returnBook(@PathVariable(value = "id") Long id) {
     try {
-      // 책을 반납하려고 시도
-      boolean returned = loanService.returnBook(id);
-      if (returned) {
+      // 책을 반납하고 결과를 반환
+      String result = loanService.returnBook(id);
+
+      if (result.equals("반납이 완료되었습니다.")) {
         return ResponseEntity.ok("책이 성공적으로 반납되었습니다.");
       } else {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("해당 ID의 책이 대출 중이 아니거나 반납할 수 없습니다.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
       }
     } catch (DataIntegrityViolationException e) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("책 반납 중 오류가 발생했습니다.");
     }
   }
+
 
 
 

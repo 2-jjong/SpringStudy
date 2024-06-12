@@ -1,5 +1,7 @@
 package com.example.springstudy.DTO;
 
+import com.example.springstudy.Entity.BookEntity;
+import com.example.springstudy.Entity.UserEntity;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -8,6 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class LoanDTO {
+
 
   private Long book;
   private Long user;
@@ -22,6 +25,11 @@ public class LoanDTO {
     this.user = user;
     this.loanDate = loanDate;
     this.returnDate = returnDate;
+  }
+
+  public LoanDTO(BookEntity book, UserEntity user) {
+    this.book=book.getId();
+    this.user = user.getId();
   }
 
 
@@ -43,4 +51,6 @@ public class LoanDTO {
   public LoanDTO(String message) {
     this.message = message;
   }
+  
+  
 }
